@@ -6,9 +6,12 @@ let isPlaying = false;
 ws.onmessage = async (event) => {
     const data = event.data;
     if (data instanceof Blob) { //Audio
+
+        const timeline = getPendingTimeline();
+
         data.type = "audio/wav";
         const url = URL.createObjectURL(event.data);
-        audioQueue.push(url);
+        audioQueue.push({url, timeline});
         if (!isPlaying) playNext();
     } else { //JSON
         const msg = JSON.parse(event.data);
@@ -31,6 +34,10 @@ function handleMessage(msg) {
     
     else if (msg.type === "end_reply") {
         document.getElementById("status").textContent = "BMO is done talking";
+    }
+
+    else if (msg.type == "viseme_timeline") {
+        setPendingTimeline(msg.timeline)
     }
 
     else if (msg.type == "audio_metric") {
@@ -56,18 +63,27 @@ function playNext() {
     }
 
     isPlaying = true;
-    const url = audioQueue.shift();
+    const {url, timeline} = audioQueue.shift();
     const audio = document.getElementById("player");
+
     audio.src = url;
+
+    audio.onplay = () => {
+        if (timeline) startVisemeAnimation(audio, timeline);
+    }
+
     audio.onended = () => {
+        stopVisemeAnimation()
         URL.revokeObjectURL(url); 
         playNext();
     };
+
     audio.onerror = (e) => {
         console.error("Audio playback error:", e);
+        stopVisemeAnimation()
         URL.revokeObjectURL(url);
         playNext(); // don't stall the queue on a bad chunk
     };
-    audio.play().catch(err => console.error("play() failed:", err));
 
+    audio.play().catch(err => console.error("play() failed:", err));
 }

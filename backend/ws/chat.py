@@ -68,8 +68,12 @@ async def _stream_reply(websocket: WebSocket, conversation: list, user_input: st
         if not sentence:
             return
         tts_start = time.perf_counter()
-        audio = await loop.run_in_executor(None, synthesize, sentence, voice)
+        
+        audio, timeline = await loop.run_in_executor(None, synthesize, sentence, voice)
+        
+        await websocket.send_text(json.dumps({"type": "viseme_timeline", "timeline": timeline}))
         await websocket.send_bytes(audio)
+        
         tts_elapsed = time.perf_counter() - tts_start
         await websocket.send_text(json.dumps({"type": "audio_metric", "time_elapsed": tts_elapsed}))
 

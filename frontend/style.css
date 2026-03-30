@@ -1,0 +1,46 @@
+
+#bmo {
+    width: 25vw;
+    height: 40vh;
+    border-radius: 5%;
+    background-color: #63bda4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px
+}
+
+#bmo-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 4%;
+    background-color: #d9ffea;
+}
+
+#bmo-eyes {
+    margin-top: 13vh;
+    width: 100%;
+    justify-content: center;
+    display: flex;
+    gap: 10vw;
+}
+
+.eye {
+    width: 25px;
+    height: 35px;
+    background: black;
+    border-radius: 50%;
+}
+
+#mouth-container {
+    margin: 2vh auto 0 auto;
+    width: 128px;
+    height: 64px;
+}
+
+#bmo-mouth {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+}

@@ -2,19 +2,35 @@
 <html>
     <head>
         <title>Chat</title>
+        <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
-        <h1>BMO v0.1</h1>
-        <p id="status"></p>
-        <p id="bmo-text"></p>
-        <p id="user-text"></p>
-        
-        <pre id="transcription-metric"></pre>
-        <pre id="llm-metric"></pre>
-        <pre id="audio-metric"></pre>
-        <audio src="" style="display: hidden;" id="player"></audio>
+        <h1>BMO v0.2</h1>
+        <div id="bmo">
+            <div id="bmo-screen">
+                <div id="bmo-eyes">
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                </div>
+                <div id="mouth-container">
+                    <canvas id="bmo-mouth"></canvas>
+                </div>
+            </div>
+        </div>
+        <div>
+            <p id="status"></p>
+            <p id="bmo-text"></p>
+            <p id="user-text"></p>
+            
+            <pre id="transcription-metric"></pre>
+            <pre id="llm-metric"></pre>
+            <pre id="audio-metric"></pre>
+            <audio src="" style="display: hidden;" id="player"></audio>
+        </div>
+        <script src="/static/js/viseme.js"></script>
         <script src="/static/js/chat-ws.js"></script>
         <script src="/static/js/llm-ready.js"></script>
+        <script src="/static/js/render.js"></script>
         <script src="/static/js/recorder.js"></script>
     </body>
 </html>

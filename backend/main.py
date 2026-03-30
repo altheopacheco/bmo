@@ -53,7 +53,7 @@ async def llm_ready(request: Request):
             "system_init_message": app.state.system_init_message
         }
         
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.05)
 
 app.mount("/static", StaticFiles(directory="../frontend"), name="static")
 app.include_router(static_router)
