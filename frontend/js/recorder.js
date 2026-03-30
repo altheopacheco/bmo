@@ -22,13 +22,13 @@ async function stopRecordingAndSend() {
             stream.getTracks().forEach((t) => t.stop());
 
             const buffer = await blob.arrayBuffer();
-            ws.send(buffer);  // send binary — server handles the rest
+            ws.send(buffer);  
             resolve();
         };
         mediaRecorder.stop();
     });
 }
-// Spacebar push-to-talk
+
 let isRecording = false;
 
 document.addEventListener("keydown", async (e) => {

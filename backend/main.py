@@ -13,17 +13,14 @@ from piper import PiperVoice
 
 from config import PIPER_MODEL_PATH
 
-system_init_message = "Initializing..."
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global system_init_message
     
-    system_init_message = "Loading Piper..."
+    app.state.system_init_message = "Loading Piper..."
     app.state.voice = PiperVoice.load(PIPER_MODEL_PATH)
-    system_init_message = "Warming Up Ollama..."
+    app.state.system_init_message = "Warming Up Ollama..."
     asyncio.create_task(warmup())
-    system_init_message = "Initialized"
+    app.state.system_init_message = "Initialized"
     yield
     
 origins = [
@@ -45,7 +42,6 @@ app.add_middleware(
 
 @app.get("/llm-ready", response_class=EventSourceResponse)
 async def llm_ready(request: Request):
-    global system_init_message
     while True:
         if await request.is_disconnected():
             yield {
@@ -54,7 +50,7 @@ async def llm_ready(request: Request):
             break
         
         yield {
-            "system_init_message": system_init_message
+            "system_init_message": app.state.system_init_message
         }
         
         await asyncio.sleep(0.5)

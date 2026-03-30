@@ -1,4 +1,4 @@
-const eventSource = new EventSource("http://localhost:8000/llm-ready")
+const eventSource = new EventSource("/llm-ready")
 
 eventSource.onmessage = e => {
     const data = JSON.parse(e.data);

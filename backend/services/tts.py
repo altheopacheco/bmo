@@ -1,13 +1,5 @@
 import wave, io
-from piper import PiperVoice, SynthesisConfig
-
-syn_config = SynthesisConfig(
-    volume=0.5,  # half as loud
-    length_scale=1.0,  # twice as slow
-    noise_scale=0.9,  # more audio variation
-    noise_w_scale=0.8,  # more speaking variation
-    normalize_audio=False, # use raw audio from voice
-)
+from piper import PiperVoice
 
 def synthesize(text: str, voice: PiperVoice) -> bytes:
     

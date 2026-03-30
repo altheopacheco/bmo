@@ -23,6 +23,7 @@ def transcribe_audio(audio_bytes: bytes):
 
     except Exception as e:
         print(f"Transcription error: {e}")
+        raise e
 
     finally:
         for path in [webm_path, wav_path]:

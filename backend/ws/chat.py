@@ -30,7 +30,7 @@ async def _transcribe(websocket: WebSocket, audio_bytes: bytes) -> str:
     print("Transcribing...")
     start_time = time.perf_counter()
     
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     (segments, _) = await loop.run_in_executor(None, transcribe_audio, audio_bytes)
 
 

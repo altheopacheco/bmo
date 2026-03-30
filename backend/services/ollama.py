@@ -22,7 +22,7 @@ def _trim(conversation: list):
 
 async def warmup():
     print("Warming up Ollama model...")
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, lambda: chat(
         model=OLLAMA_MODEL,
         messages=[{"role": "user", "content": "Helllo"}]

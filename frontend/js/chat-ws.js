@@ -1,4 +1,4 @@
-const ws = new WebSocket("ws://localhost:8000/ws");
+const ws = new WebSocket(`ws://${window.location.host}/ws`);
 
 const audioQueue = [];
 let isPlaying = false;
