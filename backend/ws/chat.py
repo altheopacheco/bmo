@@ -22,11 +22,17 @@ async def chat_ws(websocket: WebSocket):
             transcript = await _transcribe(websocket, audio_bytes)
             if transcript:
                 await _stream_reply(websocket, conversation, transcript)
+            else: 
+                print("No transcript received")        
+            await websocket.send_text(json.dumps({"type": "end_reply"}))
+            
 
     except WebSocketDisconnect:
         print("Client disconnected")
 
 async def _transcribe(websocket: WebSocket, audio_bytes: bytes) -> str:
+    if audio_bytes is None: 
+        return
     print("Transcribing...")
     start_time = time.perf_counter()
     
@@ -46,8 +52,7 @@ async def _transcribe(websocket: WebSocket, audio_bytes: bytes) -> str:
         transcript += segment.text
         await websocket.send_text(json.dumps({"type": "user", "text": segment.text}))
         await websocket.send_text(json.dumps({"type": "transcription_metric", "time_elapsed": time_elapsed}))
-    
-    print(f"Transcript: {transcript}")
+        
     return transcript
 
 async def _stream_reply(websocket: WebSocket, conversation: list, user_input: str):
@@ -95,5 +100,4 @@ async def _stream_reply(websocket: WebSocket, conversation: list, user_input: st
     if buffer.strip():
         await flush_sentence(buffer.strip())
 
-    await websocket.send_text(json.dumps({"type": "end_reply"}))
     commit_reply(conversation, reply)

@@ -1,9 +1,10 @@
 
 #bmo {
+    margin: 2rem auto;
     width: 25vw;
     height: 40vh;
     border-radius: 5%;
-    background-color: #63bda4;
+    background-color: #63c5ae;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,11 +15,11 @@
     width: 100%;
     height: 100%;
     border-radius: 4%;
-    background-color: #d9ffea;
+    background-color: #bfffcb;
 }
 
 #bmo-eyes {
-    margin-top: 13vh;
+    margin-top: 12vh;
     width: 100%;
     justify-content: center;
     display: flex;
@@ -26,8 +27,8 @@
 }
 
 .eye {
-    width: 25px;
-    height: 35px;
+    width: 27px;
+    height: 31px;
     background: black;
     border-radius: 50%;
 }
