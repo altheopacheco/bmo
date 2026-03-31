@@ -41,17 +41,17 @@ function handleMessage(msg) {
     }
 
     else if (msg.type == "audio_metric") {
-        document.getElementById("audio-metric").textContent = `Audio Elapsed Time: ${msg.time_elapsed}s`
+        document.getElementById("audio-metric").textContent = `Audio Elapsed Time: ${msg.time_elapsed.toFixed(4)}s`
     } else if (msg.type == "llm_metric") {
-        document.getElementById("llm-metric").textContent = `LLM Elapsed Time: ${msg.time_elapsed}s`
+        document.getElementById("llm-metric").textContent = `LLM Elapsed Time: ${msg.time_elapsed.toFixed(4)}s`
     } else if (msg.type == "transcription_metric") {
-        document.getElementById("transcription-metric").textContent = `Transcription Elapsed Time: ${msg.time_elapsed}s`
+        document.getElementById("transcription-metric").textContent = `Transcription Elapsed Time: ${msg.time_elapsed.toFixed(4)}s`
     }
     
-    else if (msg) {
-        console.log("BMO finished");
-    } else if (msg.type === "error") {
+    else if (msg.type === "error") {
         console.error(msg.message);
+    } else {
+        console.log(`Unhandled Message: ${msg}`)
     }
 }
 

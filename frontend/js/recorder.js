@@ -43,9 +43,7 @@ document.addEventListener("keyup", async (e) => {
   if (e.code !== "Space" || !isRecording) return;
   isRecording = false;
   setStatus("Transcribing...");
-  const transcript = await stopRecordingAndSend();
-  document.getElementById("user-text").textContent = transcript;
-  ws.send(transcript + "<|EOS|>");
+  await stopRecordingAndSend();
 });
 
 function setStatus(msg) {

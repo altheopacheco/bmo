@@ -1,12 +1,21 @@
 import wave, io
-from piper import PiperVoice
+from piper import PiperVoice, SynthesisConfig
+
+syn_config = SynthesisConfig(
+    volume=0.8,  # half as loud
+    length_scale=0.8,  # twice as slow
+    noise_scale=0.6,  # more audio variation
+    noise_w_scale=0.8,  # more speaking variation
+    normalize_audio=False, # use raw audio from voice
+)
+
 def synthesize(text: str, voice: PiperVoice) -> tuple[bytes, list]:
     
     buffer = io.BytesIO()
     sample_rate = voice.config.sample_rate
     
     with wave.open(buffer, "wb") as b:
-        phonemes = voice.synthesize_wav(text, b, include_alignments=True)
+        phonemes = voice.synthesize_wav(text, b, include_alignments=True, syn_config=syn_config)
 
     timeline = []
     time_cursor = 0.0

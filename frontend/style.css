@@ -45,3 +45,12 @@
     display: block;
     image-rendering: pixelated;
 }
+
+#details {
+    display: flex;
+    gap: 1rem;
+}
+
+#details div {
+    flex: 1;
+}
