@@ -3,6 +3,11 @@ const ws = new WebSocket(`ws://${window.location.host}/ws`);
 const audioQueue = [];
 let isPlaying = false;
 
+chatElement = document.getElementById("chat-history");
+currentChat = null;
+inProgress = false;
+doneThinking = false;
+
 ws.onmessage = async (event) => {
     const data = event.data;
     if (data instanceof Blob) { //Audio
@@ -21,19 +26,35 @@ ws.onmessage = async (event) => {
 
 function handleMessage(msg) {
     if (msg.type === "user") {
-        document.getElementById("user-text").textContent = `You: ${msg.text}`;
+        if (!inProgress) {
+            createChat("User", msg.text)
+        } else {
+            appendCurrentChat(msg.text)
+        }
+        doneThinking = false;
     } 
     
     else if (msg.type === "start") {
-        document.getElementById("bmo-text").textContent = "BMO: ";
-        document.getElementById("status").textContent = "BMO is thinking...";
+        endChat();
     } else if (msg.type === "chunk") {
-        document.getElementById("bmo-text").textContent += msg.text;
-        document.getElementById("status").textContent = "BMO is talking...";
+        if (!doneThinking) {
+            createChat("BMO", msg.text);
+            doneThinking = true;
+        } else {
+            appendCurrentChat(msg.text)
+        }
+        // document.getElementById("status").textContent = "BMO is talking...";
+    } else if (msg.type === "reasoning") {
+        if (!inProgress) {
+            createChat("Reasoning", msg.text)
+        } else {
+            appendCurrentChat(msg.text)
+        }
     } 
     
     else if (msg.type === "end_reply") {
-        document.getElementById("status").textContent = "BMO is done talking";
+        // document.getElementById("status").textContent = "BMO is done talking";
+        endChat()
     }
 
     else if (msg.type == "viseme_timeline") {
@@ -54,7 +75,6 @@ function handleMessage(msg) {
         console.log(`Unhandled Message: ${msg}`)
     }
 }
-
 
 function playNext() {
     if (audioQueue.length === 0) {
@@ -86,4 +106,19 @@ function playNext() {
     };
 
     audio.play().catch(err => console.error("play() failed:", err));
+}
+
+function createChat(type, text) {
+    currentChat = document.createElement("li");
+    currentChat.textContent = type + ": " + text;
+    chatElement.prepend(currentChat);
+    inProgress = true
+}
+
+function appendCurrentChat(msg) {
+    currentChat.textContent += msg
+}
+
+function endChat() {
+    inProgress = false
 }

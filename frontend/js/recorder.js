@@ -36,16 +36,10 @@ document.addEventListener("keydown", async (e) => {
   e.preventDefault();
   isRecording = true;
   await startRecording();
-  setStatus("Recording...");
 });
 
 document.addEventListener("keyup", async (e) => {
   if (e.code !== "Space" || !isRecording) return;
   isRecording = false;
-  setStatus("Transcribing...");
   await stopRecordingAndSend();
 });
-
-function setStatus(msg) {
-  document.getElementById("status").textContent = msg;
-}

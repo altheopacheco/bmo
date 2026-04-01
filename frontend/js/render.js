@@ -36,7 +36,6 @@ function getFrameCoords(viseme) {
 
 function drawFrame(viseme, alpha) {
     const { sx, sy } = getFrameCoords(viseme);
-    console.log(sx, sy)
     ctx.globalAlpha = alpha;
     ctx.drawImage(
         spriteSheet,

@@ -1,0 +1,47 @@
+FROM "C:\Users\althe\Downloads\qwen3-1.7b-q4_k_m.gguf"
+
+TEMPLATE """{{- if .Messages }}
+{{- if or .System .Tools }}<|im_start|>system
+{{- if .System }}
+{{ .System }}
+{{- end }}
+{{- if .Tools }}
+
+# Tools
+You can use the following tools:
+{{- range .Tools }}
+- {{ .Function.Name }}: {{ .Function.Description }}
+  Parameters: {{ .Function.Parameters }}
+{{- end }}
+{{- end }}<|im_end|>
+{{- end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 -}}
+{{- if eq .Role "user" }}<|im_start|>user
+{{ .Content }}<|im_end|>
+{{- else if eq .Role "assistant" }}<|im_start|>assistant
+{{- if .Content }}
+{{ .Content }}
+{{- end }}
+{{- if .ToolCalls }}
+<|tool_call|>
+{{- range .ToolCalls }}
+{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+{{- end }}
+<|im_end|>
+{{- end }}
+{{- else if eq .Role "tool" }}<|im_start|>user
+<|tool_response|>
+{{ .Content }}<|im_end|>
+{{- end }}
+{{- if $last }}<|im_start|>assistant
+{{ end }}
+{{- end }}
+{{- end }}"""
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|tool_call|>"
+PARAMETER stop "<|tool_response|>"
+
+SYSTEM """You are a helpful assistant."""

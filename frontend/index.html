@@ -5,38 +5,42 @@
         <link rel="stylesheet" href="/static/style.css">
     </head>
     <body>
-        <div id="bmo">
-            <div id="bmo-screen">
-                <div id="bmo-eyes">
-                    <div class="eye left"></div>
-                    <div class="eye right"></div>
-                </div>
-                <div id="mouth-container">
-                    <canvas id="bmo-mouth"></canvas>
-                </div>
-            </div>
-        </div>
-        <div id="details">
-            <div>
+        <div id="ui">
+            <div class="section" id="chat">
                 <h1>BMO v0.3</h1>
-                <p id="status"></p>
-            </div>
-            <div>
-                <h1>Chat</h1>
+                <h2>Chat</h2>
+                <ul id="chat-history"></ul>
                 <p id="bmo-text"></p>
                 <p id="user-text"></p>
             </div>
-            <div>
-                <h1>Metrics</h1>
-                <pre id="transcription-metric"></pre>
-                <pre id="llm-metric"></pre>
-                <pre id="audio-metric"></pre>
-                <audio src="" style="display: none;" id="player"></audio>
+            <div class="section" id="bmo-section">
+                <div id="bmo-container">
+                    <div id="bmo" >
+                        <div id="bmo-screen">
+                            <div id="bmo-eyes">
+                                <div class="eye left"></div>
+                                <div class="eye right"></div>
+                            </div>
+                            <div id="mouth-container">
+                                <canvas id="bmo-mouth"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="details">
+                    <div>
+                        <pre id="state"></pre>
+                        <pre id="transcription-metric"></pre>
+                        <pre id="llm-metric"></pre>
+                        <pre id="audio-metric"></pre>
+                    </div>
+                </div>
             </div>
         </div>
-        <script src="/static/js/viseme.js"></script>
+        <audio src="" style="display: none;" id="player"></audio>
         <script src="/static/js/chat-ws.js"></script>
-        <script src="/static/js/llm-ready.js"></script>
+        <script src="/static/js/state.js"></script>
+        <script src="/static/js/viseme.js"></script>
         <script src="/static/js/render.js"></script>
         <script src="/static/js/recorder.js"></script>
     </body>

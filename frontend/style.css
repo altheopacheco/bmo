@@ -1,8 +1,16 @@
 
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
 #bmo {
-    margin: 2rem auto;
-    width: 25vw;
-    height: 40vh;
+    width: 33vw;
+    height: 50vh;
     border-radius: 5%;
     background-color: #63c5ae;
     display: flex;
@@ -49,8 +57,43 @@
 #details {
     display: flex;
     gap: 1rem;
+    flex: 1;
 }
 
 #details div {
     flex: 1;
+}
+
+#ui {
+    display: flex;
+    height: 100vh;
+    gap: 1rem;
+}
+
+#ui .section { 
+    height: 100%;
+    padding: 1rem;
+}
+.section#chat {
+    flex: 1
+}
+
+#bmo-section {
+    flex: 2;
+}
+
+#bmo-container {
+    display: flex;
+    align-items: center;     /* vertical center */
+    justify-content: center;
+    height: 70%;
+}
+
+#chat-history li {
+    margin-bottom: 1rem;
+}
+
+#chat-history {
+    overflow-y: auto;
+    max-height: 100%;
 }
