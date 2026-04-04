@@ -1,3 +1,5 @@
+import { renderMouth, renderRest } from "./render.js";
+
 const PHONEME_TO_VISEME = {
     // --- Silence / special ---
     "_": "rest", "^": "rest", " ": "rest",
@@ -146,3 +148,5 @@ function sampleTimeline(timeline, t) {
 function easeInOut(t) {
     return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 }
+
+export { setPendingTimeline, getPendingTimeline, startVisemeAnimation, stopVisemeAnimation };

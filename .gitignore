@@ -1,7 +1,7 @@
 backend/__pycache__/
 backend/*/__pycache__/
 backend/models
-backend/venv
+backend/.venv
 .vscode
 .env
 
