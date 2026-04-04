@@ -4,7 +4,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "models"
 
-# LLM models (llama-cpp-python)
+# LLM models 
+LLAMA_SERVER_URL="http://localhost:8080/v1"
 ROUTER_MODEL_PATH = str(MODEL_DIR / "Llama-3.2-1B-Instruct-Q5_K_M.gguf")
 RESPONDER_MODEL_PATH = str(MODEL_DIR / "Llama-3.2-1B-Instruct-Q5_K_M.gguf")
 
