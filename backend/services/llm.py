@@ -1,17 +1,23 @@
+from abc import ABC, abstractmethod
 import asyncio
 import json, concurrent.futures
+
 from typing import AsyncGenerator, Dict, Iterator, List, Literal, Optional
-
+from openai import AsyncOpenAI
 from llama_cpp import CreateChatCompletionResponse, Llama, LlamaGrammar
-
 from pydantic import BaseModel
+
+from config import LLAMA_SERVER_URL, ROUTER_MODEL_PATH
 
 class RouterDecision(BaseModel):
     action: Literal["tool", "speak", "finish"]
     name: Optional[Literal["get_weather", "calculate", "search_web"]] = None
     args: Optional[dict] = None
+    @abstractmethod
+    async def generate(self, conversation: List[Dict], is_final: bool) -> AsyncGenerator[str, None]:
+        pass
 
-class RouterLLM:
+class LlamaCPPRouter:
     def __init__(self, model: Llama, system_prompt: str):
         self.model = model
         self.system_prompt = system_prompt
@@ -58,7 +64,7 @@ class RouterLLM:
                 return json.loads(match.group())
             return {"action": "finish"}   # safe fallback
     
-    async def _decide_stream(self, conversation: List[Dict]) -> AsyncGenerator[str, None]:
+    async def decide_stream(self, conversation: List[Dict]) -> AsyncGenerator[str, None]:
         
         loop = asyncio.get_running_loop()
         queue = asyncio.Queue()
@@ -88,18 +94,19 @@ class RouterLLM:
         
         executor = concurrent.futures.ThreadPoolExecutor()
         executor.submit(decide_sync)
+        
+        try: 
+            while True:
+                token = await queue.get()
+                if token is None:
+                    break
+                if isinstance(token, Exception):
+                    raise token
+                yield token
+        finally:        
+            executor.shutdown(wait=False)
                 
-        while True:
-            token = await queue.get()
-            if token is None:
-                break
-            if isinstance(token, Exception):
-                raise token
-            yield token
-            
-        executor.shutdown(wait=False)
-                
-class ResponderLLM:
+class LlamaCPPResponder:
     def __init__(self, model: Llama, system_prompt: str):
         self.model = model
         self.system_prompt = system_prompt
@@ -136,11 +143,96 @@ class ResponderLLM:
         # Start the sync streaming in a thread
         executor = concurrent.futures.ThreadPoolExecutor()
         executor.submit(stream_sync)
+        try:   
+            while True:
+                token = await queue.get()
+                if token is None:
+                    break
+                yield token
+        finally:
+            executor.shutdown(wait=False)
         
-        while True:
-            token = await queue.get()
-            if token is None:
-                break
-            yield token
+class LlamaServerRouter:
+    def __init__(self, base_url: str, system_prompt: str):
+        self.client = AsyncOpenAI(base_url=base_url, api_key="sk-no-key-required")
+        self.system_prompt = system_prompt
+        self.schema = RouterDecision.model_json_schema()
+        self.grammar = LlamaGrammar.from_json_schema(self.schema)
+
+    async def decide(self, conversation: List[Dict]) -> RouterDecision:
+        """Non-blocking call using native async SDK."""
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            *conversation
+        ]
+
+        response = await self.client.chat.completions.create(
+            model="local-model",
+            messages=messages,
+            temperature=0.0,
+            max_tokens=150,
+            extra_body={
+                "grammar": self.schema 
+            }
+        )
+
+        content = response.choices[0].message.content
         
-        executor.shutdown(wait=False)
+        try:
+            decision_dict = json.loads(content)
+        except json.JSONDecodeError:
+            import re
+            match = re.search(r'\{.*\}', content, re.DOTALL)
+            decision_dict = json.loads(match.group()) if match else {"action": "finish"}
+
+        return RouterDecision.model_validate(decision_dict)
+
+    async def decide_stream(self, conversation: List[Dict]) -> AsyncGenerator[str, None]:
+        """Streams tokens directly using the SDK's async iterator."""
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            *conversation
+        ]
+
+        stream = await self.client.chat.completions.create(
+            model="local-model",
+            messages=messages,
+            temperature=0.0,
+            max_tokens=150,
+            stream=True,
+            extra_body={
+                "grammar": self.schema
+            }
+        )
+
+        async for chunk in stream:
+            token = chunk.choices[0].delta.content
+            if token:
+                yield token
+                
+class LlamaServerResponder:
+    def __init__(self, base_url: str, system_prompt: str):
+        self.client = AsyncOpenAI(base_url=base_url, api_key="sk-no-key-required")
+        self.system_prompt = system_prompt
+
+    async def generate(self, conversation: List[Dict], is_final: bool) -> AsyncGenerator[str, None]:
+        """Streams tokens directly from the remote server."""
+        mode = "FINAL" if is_final else "INTERMEDIATE"
+        
+        messages = [
+            {"role": "system", "content": f"{self.system_prompt}\n\nMode: {mode}"},
+            *conversation
+        ]
+
+        stream = await self.client.chat.completions.create(
+            model="local-model",
+            messages=messages,
+            stream=True,
+            temperature=0.7,
+            max_tokens=512
+        )
+
+        async for chunk in stream:
+            # Safely extract the content delta
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
