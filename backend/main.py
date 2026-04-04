@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from llama_cpp import Llama
 from piper import PiperVoice
 
+from services.stt import WhisperSTT
 from config import ROUTER_MODEL_PATH, RESPONDER_MODEL_PATH, PIPER_MODEL_PATH
 from ws.chat import chat_ws
 
@@ -21,6 +22,8 @@ async def lifespan(app: FastAPI):
     )
     # app.state.responder_model = Llama(model_path=RESPONDER_MODEL_PATH, verbose=False, n_ctx=2048)
     app.state.responder_model = app.state.router_model
+    
+    app.state.stt = WhisperSTT()
     yield
     # optional cleanup
 

@@ -83,7 +83,7 @@ class RouterLLM:
                         asyncio.run_coroutine_threadsafe(queue.put(token), loop)
                 asyncio.run_coroutine_threadsafe(queue.put(None), loop)  # sentinel
             except Exception as e:
-                asyncio.run_coroutine_threadsafe(queue.put(f"Error: {e}"), loop)
+                asyncio.run_coroutine_threadsafe(queue.put(e), loop)
                 asyncio.run_coroutine_threadsafe(queue.put(None), loop)
         
         executor = concurrent.futures.ThreadPoolExecutor()
@@ -93,6 +93,8 @@ class RouterLLM:
             token = await queue.get()
             if token is None:
                 break
+            if isinstance(token, Exception):
+                raise token
             yield token
             
         executor.shutdown(wait=False)

@@ -12,12 +12,11 @@ class WhisperSTT(STTService):
     def __init__(self, model="base.en", device="cpu", compute_type="int8"):
         self.model = WhisperModel(model, device=device, compute_type=compute_type)
         
-    async def transcribe(self, audio_bytes) -> str:
+    async def transcribe(self, audio_bytes: bytes) -> str:
         loop = asyncio.get_running_loop()
-        segments, _ = await loop.run_in_executor(None, self._transcribe_sync, audio_bytes)
-        return " ".join(seg.text for seg in segments)
+        return await loop.run_in_executor(None, self._transcribe_sync, audio_bytes)
 
-    def _transcribe_sync(self, audio_bytes: bytes):
+    def _transcribe_sync(self, audio_bytes: bytes) -> str:
         with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
             tmp.write(audio_bytes)
             webm_path = tmp.name
@@ -30,9 +29,13 @@ class WhisperSTT(STTService):
                 "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", wav_path
             ], check=True, capture_output=True)
 
-            result = self.model.transcribe(wav_path, language="en", without_timestamps=True)
-
-            return result
+            segments, _ = self.model.transcribe(
+                wav_path,
+                language="en",
+                without_timestamps=True,
+            )
+            
+            return " ".join(segment.text for segment in segments)
 
         except Exception as e:
             print(f"Transcription error: {e}")

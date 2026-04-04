@@ -13,7 +13,7 @@ async def chat_ws(websocket: WebSocket):
     # Models loaded during lifespan
     router_llm = RouterLLM(app.state.router_model, build_router_system_prompt())
     responder_llm = ResponderLLM(app.state.responder_model, RESPONDER_SYSTEM_PROMPT)
-    stt = WhisperSTT()
+    stt = app.state.stt
     tts = PiperTTS(app.state.voice)
 
     orchestrator = AgentOrchestrator(

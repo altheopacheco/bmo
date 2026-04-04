@@ -24,8 +24,9 @@ class AgentLoop:
         self.stopped = True
     
     async def run(self, user_input: str) -> AsyncGenerator[ServerMessage, None]:
-        # Add user message to history
         print("[SYSTEM] Running agent loop...")
+        self.stopped = False
+        
         self.conversation.add_user(user_input)
         
         for step in range(self.max_steps):
@@ -44,7 +45,8 @@ class AgentLoop:
             decision_buffer = ""
             async for chunk in stream:
                 if self.stopped:
-                    break
+                    yield ServerMessage(type="done")
+                    return
                 if not decision_buffer:
                     ttft = time.perf_counter() - start
                     print(f"[METRIC] TTFT: {ttft:.4}s")
@@ -93,7 +95,7 @@ class AgentLoop:
                     yield ServerMessage(type="llm_token", payload=token)
                 # Append to conversation
                 self.conversation.add_assistant(content=full_output)
-                # Optionally yield an event to indicate intermediate speech is done (for TTS)
+                # TODO: Add seperate message type for end_speak
                 yield ServerMessage(type="done")
 
             elif decision.action == "finish":

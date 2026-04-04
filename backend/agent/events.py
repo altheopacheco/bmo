@@ -1,11 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, Any, Literal
 
-# Frontend → Backend
-class ClientMessage(BaseModel):
-    type: Literal["audio_chunk", "audio_stop", "interrupt"]
-    data: Optional[bytes] = None
-
 # Backend → Frontend
 class ServerMessage(BaseModel):
     type: Literal[
