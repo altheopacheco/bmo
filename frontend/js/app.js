@@ -50,9 +50,9 @@ function handleJsonMessage(msg) {
             setPendingTimeline(msg.payload);
             break;
         case "metric":
-            if (msg.payload.name === "transcription") ui.updateMetric("transcription", msg.payload.value);
-            else if (msg.payload.name === "ttft") ui.updateMetric("llm", msg.payload.value);
-            else if (msg.payload.name === "tts") ui.updateMetric("audio", msg.payload.value);
+            if (msg.payload.name === "transcription") ui.updateMetric("transcription", msg.payload.content);
+            else if (msg.payload.name === "ttft") ui.updateMetric("llm", msg.payload.content);
+            else if (msg.payload.name === "tts") ui.updateMetric("audio", msg.payload.content);
             break;
         case "done":
             ui.finishAssistantMessage();
@@ -81,19 +81,31 @@ function handleBinaryAudio(audioBuffer) {
 
 // Recording: hold Space to record, release to send stop
 document.addEventListener("keydown", async (e) => {
-    if (e.code !== "Space" || e.repeat || isRecording) return;
+    if (!(e.ctrlKey && e.key === 'q') || isRecording) return;
     e.preventDefault();
     isRecording = true;
     await startRecording();
 });
 
 document.addEventListener("keyup", async (e) => {
-    if (e.code !== "Space" || !isRecording) return;
+    if (!(e.ctrlKey && e.key === 'q') || !isRecording) return;
     e.preventDefault();
     isRecording = false;
     await stopRecordingAndSend();  
     sendStopSignal();   
 });
+
+const chatInput = document.getElementById("chat-input");
+const chatSubmit = document.getElementById("chat-submit");
+
+chatSubmit.addEventListener("click", () => {
+    if (!chatInput.value) return
+    ws.sendControl("user_message", {
+        "content": chatInput.value
+    });
+
+    chatInput.value = "";
+})
 
 // Initialise connection and audio player
 connectWebSocket();

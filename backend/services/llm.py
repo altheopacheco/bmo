@@ -13,11 +13,26 @@ class RouterDecision(BaseModel):
     action: Literal["tool", "speak", "finish"]
     name: Optional[Literal["get_weather", "calculate", "search_web"]] = None
     args: Optional[dict] = None
+    
+class RouterLLM(ABC):
+    @abstractmethod
+    async def decide_stream(self, conversation: List[Dict]) -> AsyncGenerator[str, None]:
+        pass
+    
+    @abstractmethod
+    async def health_check(self) -> bool:
+        pass
+    
+class ResponderLLM(ABC):
     @abstractmethod
     async def generate(self, conversation: List[Dict], is_final: bool) -> AsyncGenerator[str, None]:
         pass
+    
+    @abstractmethod
+    async def health_check(self) -> bool:
+        pass
 
-class LlamaCPPRouter:
+class LlamaCPPRouter(RouterLLM):
     def __init__(self, model: Llama, system_prompt: str):
         self.model = model
         self.system_prompt = system_prompt
@@ -106,7 +121,7 @@ class LlamaCPPRouter:
         finally:        
             executor.shutdown(wait=False)
                 
-class LlamaCPPResponder:
+class LlamaCPPResponder(ResponderLLM):
     def __init__(self, model: Llama, system_prompt: str):
         self.model = model
         self.system_prompt = system_prompt
@@ -152,13 +167,23 @@ class LlamaCPPResponder:
         finally:
             executor.shutdown(wait=False)
         
-class LlamaServerRouter:
+class LlamaServerRouter(RouterLLM):
     def __init__(self, base_url: str, system_prompt: str):
         self.client = AsyncOpenAI(base_url=base_url, api_key="sk-no-key-required")
         self.system_prompt = system_prompt
-        self.schema = RouterDecision.model_json_schema()
-        self.grammar = LlamaGrammar.from_json_schema(self.schema)
-
+        schema_json = json.dumps(RouterDecision.model_json_schema())
+        self.grammar = LlamaGrammar.from_json_schema(schema_json)
+        
+    async def health_check(self) -> bool:
+        print("[SYSTEM] Health Check: Checking LlamaCPP Server...")
+        try:
+            await self.client.models.list()
+            print("[SYSTEM] Health Check: Server Healthy")
+            return True
+        except Exception as e:
+            print(f"[ERROR] Router LLM Health check failed: {e}")
+            return False
+            
     async def decide(self, conversation: List[Dict]) -> RouterDecision:
         """Non-blocking call using native async SDK."""
         messages = [
@@ -172,7 +197,7 @@ class LlamaServerRouter:
             temperature=0.0,
             max_tokens=150,
             extra_body={
-                "grammar": self.schema 
+                "grammar": self.grammar._grammar
             }
         )
 
@@ -198,22 +223,36 @@ class LlamaServerRouter:
             model="local-model",
             messages=messages,
             temperature=0.0,
-            max_tokens=150,
+            max_tokens=4096,
             stream=True,
             extra_body={
-                "grammar": self.schema
-            }
+                "grammar": self.grammar._grammar,
+                "cache_prompt": True
+            },
         )
 
         async for chunk in stream:
+            if chunk.choices[0].finish_reason:
+                print(f"\nFINISH REASON: {chunk.choices[0].finish_reason}")
             token = chunk.choices[0].delta.content
             if token:
                 yield token
                 
-class LlamaServerResponder:
+class LlamaServerResponder(ResponderLLM):
     def __init__(self, base_url: str, system_prompt: str):
         self.client = AsyncOpenAI(base_url=base_url, api_key="sk-no-key-required")
         self.system_prompt = system_prompt
+        
+    async def health_check(self) -> bool:
+        print("[SYSTEM] Health Check: Checking LlamaCPP Server...")
+        try:
+            # Run the blocking call in a separate thread
+            result = await asyncio.to_thread(self.client.models.list)
+            print("[SYSTEM] Health Check: Server Healthy")
+            return True
+        except Exception as e:
+            print(f"[ERROR] Responder LLM Health check failed: {e}")
+            return False
 
     async def generate(self, conversation: List[Dict], is_final: bool) -> AsyncGenerator[str, None]:
         """Streams tokens directly from the remote server."""

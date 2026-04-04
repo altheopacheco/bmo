@@ -20,13 +20,15 @@ class AgentOrchestrator:
         self.max_steps = max_steps
         self.agent_loop = None
 
-    async def process_audio(self, audio_bytes: bytes, websocket):
+    async def process_audio(self, audio_bytes: bytes, websocket) -> str:
         # 1. Transcribe
         print("[AGENT] Transcribing...")
         transcript = await self.stt.transcribe(audio_bytes)
         print("[AGENT] Transcript Complete:", transcript)
-        await websocket.send_json(ServerMessage(type="transcript", payload=transcript).model_dump())
+        return transcript
 
+    async def run_loop(self, input: str, websocket):
+        await websocket.send_json(ServerMessage(type="transcript", payload=input).model_dump())
         # 2. Run the two‑stage agent loop
         self.agent_loop = AgentLoop(self.router, self.responder, max_steps=self.max_steps)
 
@@ -40,7 +42,7 @@ class AgentOrchestrator:
             await websocket.send_bytes(audio_bytes)
             token_buffer = ""
 
-        async for event in self.agent_loop.run(transcript):
+        async for event in self.agent_loop.run(input):
             # Forward all events to frontend
             if event.type == "status":
                 print(f"[AGENT] Status: {event.payload}")
@@ -52,7 +54,7 @@ class AgentOrchestrator:
                 # Accumulate only if we are in final answer mode
                 # if final_mode:
                 token_buffer += event.payload
-                if any(token_buffer.endswith(p) for p in [".", "!", "?", "\n", "—", ","]):
+                if any(token_buffer.endswith(p) for p in [".", "!", "?", "\n", "—"]):
                     await flush_sentence(token_buffer)
             elif event.type == "reasoning":
                 await websocket.send_json(event.model_dump())

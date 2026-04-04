@@ -40,7 +40,7 @@ class AgentLoop:
             print("[AGENT] BMO: Processing user prompt...")
             # decision = await self.router.decide(self.conversation.get_messages())
             
-            stream = self.router._decide_stream(self.conversation.get_messages())
+            stream = self.router.decide_stream(self.conversation.get_messages())
             
             decision_buffer = ""
             async for chunk in stream:
