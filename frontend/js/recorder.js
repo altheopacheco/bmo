@@ -1,45 +1,42 @@
 // recorder.js
 let mediaRecorder = null;
-let audioChunks = [];
 let stream = null;
+let ws = null;
+let audioChunks = [];
 
-async function startRecording() {
-  stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+export function initRecorder(webSocket) { ws = webSocket; }
 
-  audioChunks = [];
-  mediaRecorder.ondataavailable = (e) => {
-    if (e.data.size > 0) audioChunks.push(e.data);
-  };
+export async function startRecording() {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks = [];
 
-  mediaRecorder.start();
+    mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.start(100);
 }
 
-async function stopRecordingAndSend() {
+export async function stopRecordingAndSend() {
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        return;
+    }
     return new Promise((resolve) => {
         mediaRecorder.onstop = async () => {
-            const blob = new Blob(audioChunks, { type: "audio/webm" });
-            stream.getTracks().forEach((t) => t.stop());
-
+            const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+            stream.getTracks().forEach(t => t.stop());
             const buffer = await blob.arrayBuffer();
-            ws.send(buffer);  
+            if (ws && ws.ws.readyState === WebSocket.OPEN) {
+                ws.sendAudioChunk(buffer);  // send as a single binary message
+            }
             resolve();
         };
         mediaRecorder.stop();
     });
 }
 
-let isRecording = false;
-
-document.addEventListener("keydown", async (e) => {
-  if (e.code !== "Space" || e.repeat || isRecording) return;
-  e.preventDefault();
-  isRecording = true;
-  await startRecording();
-});
-
-document.addEventListener("keyup", async (e) => {
-  if (e.code !== "Space" || !isRecording) return;
-  isRecording = false;
-  await stopRecordingAndSend();
-});
+export function sendStopSignal() {
+    if (ws) ws.sendControl("stop");
+}

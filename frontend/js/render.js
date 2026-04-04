@@ -60,3 +60,5 @@ function renderRest() {
 spriteSheet.onload = () => {
     drawFrame("rest", 1);
 };
+
+export {renderMouth, renderRest}

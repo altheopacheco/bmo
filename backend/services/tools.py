@@ -1,26 +1,22 @@
-def get_weather(city: str):
-    return f"The weather in {city} is sunny, 22°C."
+def get_weather(city: str) -> str:
+    return f"Weather in {city}: 22°C, sunny."
 
-TOOLS = {
-    "get_weather": get_weather
-}
+def calculate(expression: str) -> str:
+    try:
+        return str(eval(expression, {"__builtins__": {}}))
+    except Exception as e:
+        return f"Error: {e}"
 
-TOOL_SCHEMAS = [
-                    {
-                    "type":"function",
-                    "function":{
-                            "name":"get_weather",
-                            "description":"Gets the current weather conditions of a city",
-                            "parameters":{
-                            "type":"object",
-                            "properties":{
-                                "city":{
-                                "type":"string",
-                                "description":"The name of the city"
-                                }
-                            },
-                            "required":["city"]
-                            }
-                        }
-                    }
-                ]
+def search_web(query: str) -> str:
+    return f"Stub result for '{query}'"
+
+def dispatch_tool(name: str, args: dict) -> str:
+    handlers = {
+        "get_weather": get_weather,
+        "calculate": calculate,
+        "search_web": search_web,
+    }
+    fn = handlers.get(name)
+    if not fn:
+        return f"Unknown tool '{name}'"
+    return fn(**args)
