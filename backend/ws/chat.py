@@ -11,8 +11,8 @@ async def chat_ws(websocket: WebSocket):
     app = websocket.app
 
     # Models loaded during lifespan
-    router_llm = RouterLLM(app.state.router_model, build_router_system_prompt())
-    responder_llm = ResponderLLM(app.state.responder_model, RESPONDER_SYSTEM_PROMPT)
+    router_llm = app.state.router_llm
+    responder_llm = app.state.responder_llm
     stt = app.state.stt
     tts = PiperTTS(app.state.voice)
 
@@ -36,10 +36,15 @@ async def chat_ws(websocket: WebSocket):
                 except json.JSONDecodeError:
                     continue
                 if data.get("type") == "stop":
-                    await orchestrator.process_audio(bytes(audio_buffer), websocket)
+                    transcript = await orchestrator.process_audio(bytes(audio_buffer), websocket)
+                    await orchestrator.run_loop(transcript, websocket=websocket)
                     audio_buffer.clear()
                 elif data.get("type") == "cancel":
                     orchestrator.cancel()
+                elif data.get("type") == "user_message":
+                    user_input = data.get('content', None)
+                    if user_input:
+                        await orchestrator.run_loop(user_input, websocket=websocket)
             elif "bytes" in msg:
                 audio_buffer.extend(msg["bytes"])
     except WebSocketDisconnect:
