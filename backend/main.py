@@ -4,42 +4,26 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from openai import AsyncOpenAI
 from piper import PiperVoice
 
 from services.stt import WhisperSTT
-from services.llm import LlamaServerRouter, LlamaServerResponder
-from config import PIPER_MODEL_PATH, LLAMA_SERVER_URL, build_router_system_prompt, RESPONDER_SYSTEM_PROMPT
+from services.llm import LlamaServerResponder
+from config import PIPER_MODEL_PATH, LLAMA_SERVER_URL, SYSTEM_PROMPT
 from ws.chat import chat_ws
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     loop = asyncio.get_running_loop()
     
-    print("[STARTUP] Initializing: Loading Router LLM...")
-    app.state.router_llm = await loop.run_in_executor(
-        None, lambda: LlamaServerRouter(LLAMA_SERVER_URL, build_router_system_prompt())
+    print("[STARTUP] Initializing: Loading LLM...")
+    app.state.llm = await loop.run_in_executor(
+        None, lambda: LlamaServerResponder(LLAMA_SERVER_URL, SYSTEM_PROMPT)
     )
     
     max_retry = 5
     is_healthy = False
     for _ in range(max_retry):
-        is_healthy = await app.state.router_llm.health_check()
-        if is_healthy:
-            break
-        await asyncio.sleep(2)
-        
-    if not is_healthy:
-        exit(0)
-        
-    print("[STARTUP] Initializing: Loading Responder LLM...")
-    app.state.responder_llm = await loop.run_in_executor(
-        None, lambda: LlamaServerResponder(LLAMA_SERVER_URL, RESPONDER_SYSTEM_PROMPT)
-    )
-    
-    is_healthy=False
-    for _ in range(max_retry):
-        is_healthy = await app.state.router_llm.health_check()
+        is_healthy = await app.state.llm.health_check()
         if is_healthy:
             break
         await asyncio.sleep(2)

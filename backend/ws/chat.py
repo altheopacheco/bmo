@@ -1,23 +1,20 @@
 import json
 from fastapi import WebSocket, WebSocketDisconnect
 from agent.orchestrator import AgentOrchestrator
-from services.stt import WhisperSTT
 from services.tts import PiperTTS
-from services.llm import RouterLLM, ResponderLLM
-from config import MAX_AGENT_STEPS, build_router_system_prompt, RESPONDER_SYSTEM_PROMPT
+from config import MAX_AGENT_STEPS
 
 async def chat_ws(websocket: WebSocket):
     await websocket.accept()
     app = websocket.app
 
     # Models loaded during lifespan
-    router_llm = app.state.router_llm
-    responder_llm = app.state.responder_llm
+    llm = app.state.llm
     stt = app.state.stt
     tts = PiperTTS(app.state.voice)
 
     orchestrator = AgentOrchestrator(
-        stt=stt, router=router_llm, responder=responder_llm, tts=tts,
+        stt=stt, llm=llm, tts=tts,
         max_steps=MAX_AGENT_STEPS
     )
 
@@ -36,7 +33,7 @@ async def chat_ws(websocket: WebSocket):
                 except json.JSONDecodeError:
                     continue
                 if data.get("type") == "stop":
-                    transcript = await orchestrator.process_audio(bytes(audio_buffer), websocket)
+                    transcript = await orchestrator.process_audio(bytes(audio_buffer))
                     await orchestrator.run_loop(transcript, websocket=websocket)
                     audio_buffer.clear()
                 elif data.get("type") == "cancel":

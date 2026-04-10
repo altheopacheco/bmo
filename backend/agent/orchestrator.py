@@ -8,19 +8,17 @@ class AgentOrchestrator:
     def __init__(
         self,
         stt: STTService,
-        router: RouterLLM,
-        responder: ResponderLLM,
         tts: TTSService,
+        llm: ResponderLLM,
         max_steps: int = 10
     ):
         self.stt = stt
-        self.router = router
-        self.responder = responder
+        self.llm = llm
         self.tts = tts
         self.max_steps = max_steps
         self.agent_loop = None
 
-    async def process_audio(self, audio_bytes: bytes, websocket) -> str:
+    async def process_audio(self, audio_bytes: bytes) -> str:
         # 1. Transcribe
         print("[AGENT] Transcribing...")
         transcript = await self.stt.transcribe(audio_bytes)
@@ -28,12 +26,11 @@ class AgentOrchestrator:
         return transcript
 
     async def run_loop(self, input: str, websocket):
-        await websocket.send_json(ServerMessage(type="transcript", payload=input).model_dump())
-        # 2. Run the two‑stage agent loop
-        self.agent_loop = AgentLoop(self.router, self.responder, max_steps=self.max_steps)
+        await websocket.send_json(ServerMessage(type="user_message", payload=input).model_dump())
+        # 2. Run the two-stage agent loop
+        self.agent_loop = AgentLoop(llm=self.llm, max_steps=self.max_steps)
 
         token_buffer: str = ""
-        final_mode = False
         
         async def flush_sentence(sentence: str):
             nonlocal token_buffer
@@ -43,21 +40,22 @@ class AgentOrchestrator:
             token_buffer = ""
 
         async for event in self.agent_loop.run(input):
-            # Forward all events to frontend
             if event.type == "status":
                 print(f"[AGENT] Status: {event.payload}")
                 await websocket.send_json(event.model_dump())
                 
-            elif event.type == "llm_token":
-                # Forward token to frontend
+            elif event.type == "response_token":
                 await websocket.send_json(event.model_dump())
-                # Accumulate only if we are in final answer mode
-                # if final_mode:
                 token_buffer += event.payload
                 if any(token_buffer.endswith(p) for p in [".", "!", "?", "\n", "—"]):
                     await flush_sentence(token_buffer)
-            elif event.type == "reasoning":
+            elif event.type == "reasoning_token":
                 await websocket.send_json(event.model_dump())
+
+            elif event.type == "reasoning_finish":
+                await websocket.send_json(event.model_dump())
+            elif event.type == "response_finish":
+                await websocket.send_json(event.model_dump())    
 
             elif event.type == "tool_call":
                 print(f"Calling {event.payload['name']}")
@@ -66,13 +64,7 @@ class AgentOrchestrator:
             elif event.type == "tool_result":
                 await websocket.send_json(event.model_dump())
 
-            elif event.type == "final_answer_start":
-                final_mode = True
-                await websocket.send_json(event.model_dump())
-
             elif event.type == "viseme_timeline":
-                # This is usually sent by the orchestrator itself (not the loop)
-                # but if the loop yields it, forward
                 await websocket.send_json(event.model_dump())
 
             elif event.type == "metric":
@@ -80,7 +72,6 @@ class AgentOrchestrator:
 
             elif event.type == "error":
                 await websocket.send_json(event.model_dump())
-                # Optionally break or reset
 
             elif event.type == "done":
                 # Final TTS using accumulated final answer tokens

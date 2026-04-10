@@ -1,46 +1,33 @@
-import json
 from typing import List, Dict, Any, Optional
+
+from config import SYSTEM_PROMPT
 
 class ConversationHistory:
     def __init__(self, max_turns: int = 10):
         self.max_turns = max_turns
-        self.messages: List[Dict[str, Any]] = []
+        self.messages: List[Dict[str, Any]] = [
+            {"role": "system", "content": SYSTEM_PROMPT}
+        ]
     
     def add_user(self, content: str) -> None:
         self.messages.append({"role": "user", "content": content})
         self._trim()
     
     def add_assistant(self, content: str = "", reasoning: str = "", tool_calls: Optional[List[Dict]] = None) -> None:
-        msg = {"role": "assistant"}
-        if content:
-            msg["content"] = content
-        if reasoning:
-            msg["reasoning_content"] = reasoning
-        if tool_calls:
-            msg["tool_calls"] = tool_calls
-        self.messages.append(msg)
-        self._trim()
-    
-    def add_tool_result(self, tool_name: str, result: str) -> None:
-        # Return the result in the user slot — widely understood by all model families
         self.messages.append({
-            "role": "user",
-            "content": json.dumps({
-                "tool_result": tool_name,
-                "result": result
-            })
+            "role": "assistant",
+            "content": content,
+            "reasoning_content": reasoning, # Some servers support saving this
+            "tool_calls": tool_calls
         })
         self._trim()
         
-    def add_tool_call(self, tool_name: str, args: dict = {}) -> None:
+    def add_tool_result(self, id, name, result) -> None:
         self.messages.append({
-            "role": "assistant",
-            "content": json.dumps({
-                "action": "tool",
-                "name": tool_name,
-                "args": args
-            })
-        })
+            "role": "tool", 
+            "tool_call_id": id, 
+            "name": name, 
+            "content": result})
         self._trim()
         
     def get_messages(self) -> List[Dict[str, Any]]:

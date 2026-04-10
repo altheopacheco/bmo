@@ -4,8 +4,11 @@ from typing import Optional, Any, Literal
 # Backend → Frontend
 class ServerMessage(BaseModel):
     type: Literal[
-        "status", "transcript", "llm_token", "reasoning",
-        "tool_call", "tool_result", "final_answer_start", 
-        "audio_chunk", "viseme_timeline", "metric", "done", "error"
+        "status", "user_message",
+        "tool_call", "tool_result", 
+        "viseme_timeline", 
+        "response_token", "response_finish", 
+        "reasoning_token", "reasoning_finish", 
+        "metric", "done", "error"
     ]
     payload: Optional[Any] = None
