@@ -247,7 +247,7 @@ class LlamaServerResponder(ResponderLLM):
         print("[SYSTEM] Health Check: Checking LlamaCPP Server...")
         try:
             # Run the blocking call in a separate thread
-            result = await asyncio.to_thread(self.client.models.list)
+            result = await asyncio.to_thread(self.client.models.list())
             print("[SYSTEM] Health Check: Server Healthy")
             return True
         except Exception as e:

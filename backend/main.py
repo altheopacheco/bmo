@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
         await asyncio.sleep(2)
         
     if not is_healthy:
-        exit(0)
+        raise RuntimeError("Router LLM failed startup health checks")
         
     print("[STARTUP] Initializing: Loading Responder LLM...")
     app.state.responder_llm = await loop.run_in_executor(
@@ -39,13 +39,13 @@ async def lifespan(app: FastAPI):
     
     is_healthy=False
     for _ in range(max_retry):
-        is_healthy = await app.state.router_llm.health_check()
+        is_healthy = await app.state.responder_llm.health_check()
         if is_healthy:
             break
         await asyncio.sleep(2)
         
     if not is_healthy:
-        exit(0)
+        raise RuntimeError("Responder LLM failed startup health checks")
     
     print("[STARTUP] Initializing: Loading Text-to-Speech Model - Piper...")
     app.state.voice = await loop.run_in_executor(None, PiperVoice.load, PIPER_MODEL_PATH)
